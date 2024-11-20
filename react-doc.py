@@ -2,59 +2,109 @@ from constant import react_sections, react_base_url
 from utils import get_data_pane, get_soup
 import json
 
-soup = get_soup(f"{react_base_url}/learn")
 
+class ReactDocumentationScraper:
+    def __init__(self, base_url, sections):
+        self.base_url = base_url
+        self.sections = sections
 
-# Fetch Links from the page with the relative links
-def get_links(section):
-    # Find the section's parent element
-    section_parent = soup.find("a", {"title": section}).parent
-    section_parent_link = section_parent.find("a")["href"]
+    def fetch_links(self):
+        """
+        Fetches links for each specified section and its child links.
+        :return: A list of dictionaries containing parent and child links.
+        """
+        links_data = []
+        soup = get_soup(f"{self.base_url}/learn")
 
-    # Get each child link's href and text
-    child_links = [
-        {
-            "title": child.find("a").text,
-            "link": f"{react_base_url}{child.find('a')['href']}",
-        }
-        for child in section_parent.find_all("li")
-    ]
+        for section in self.sections:
+            try:
+                section_data = self.get_section_links(soup, section)
+                links_data.append(section_data)
+            except AttributeError:
+                print(f"Warning: Section '{section}' not found on the page.")
+        return links_data
 
-    return {
-        "parent": {"title": section, "link": f"{react_base_url}{section_parent_link}"},
-        "children": child_links,
-    }
+    def get_section_links(self, soup, section):
+        """
+        Fetches links for a specific section and its child links.
+        :param soup: BeautifulSoup object of the main page
+        :param section: Section title to search for
+        :return: Dictionary with parent link and child links
+        """
+        section_parent = soup.find("a", {"title": section}).parent
+        section_parent_link = section_parent.find("a")["href"]
 
-
-links_data = []
-
-for section in react_sections:
-    links_info = get_links(section)
-    links_data.append(links_info)
-
-# Fetch Data from page links
-json_array = []
-
-for data in links_data:
-    data_pane = get_data_pane(data["parent"]["link"])
-
-    base = {
-        "title": data["parent"]["title"],
-        "source": "react",
-        "url": data["parent"]["link"],
-        "sections": [],
-    }
-
-    for child in data["children"]:
-        data_pane = get_data_pane(child["link"])
-        base["sections"].append(
+        child_links = [
             {
-                "title": child["title"],
-                "url": child["link"],
+                "title": child.find("a").text,
+                "link": f"{self.base_url}{child.find('a')['href']}",
             }
-        )
+            for child in section_parent.find_all("li")
+        ]
 
-    json_array.append(base)
+        return {
+            "parent": {
+                "title": section,
+                "link": f"{self.base_url}{section_parent_link}",
+            },
+            "children": child_links,
+        }
 
-# output json
-print(json.dumps(json_array, indent=4))
+    def fetch_section_content(self, links_data):
+        """
+        Fetches content from each section and its child links.
+        :param links_data: List of dictionaries with parent and child link information.
+        :return: A JSON array of scraped data.
+        """
+        json_array = []
+
+        for data in links_data:
+            try:
+                base = {
+                    "title": data["parent"]["title"],
+                    "source": "react",
+                    "url": data["parent"]["link"],
+                    "sections": [],
+                }
+
+                for child in data["children"]:
+                    try:
+                        child_content = get_data_pane(child["link"])
+                        base["sections"].append(
+                            {
+                                "title": child["title"],
+                                "url": child["link"],
+                                "content": [],
+                            }
+                        )
+
+                    except Exception as e:
+                        print(
+                            f"Error fetching content for child '{child['title']}' in section '{data['parent']['title']}': {e}"
+                        )
+
+                # Append the parent section with all child sections to the final JSON array
+                json_array.append(base)
+
+            except Exception as e:
+                print(
+                    f"Error fetching content for section '{data['parent']['title']}': {e}"
+                )
+
+        return json_array
+
+    def scrape(self):
+        """
+        Main method to perform the scraping, processing, and outputting the final JSON.
+        :return: None
+        """
+        links_data = self.fetch_links()
+
+        json_array = self.fetch_section_content(links_data)
+
+        print(json.dumps(json_array, indent=4))
+
+
+# Run the scraper
+scraper = ReactDocumentationScraper(react_base_url, react_sections)
+scraper.scrape()
