@@ -83,7 +83,6 @@ class ReactDocumentationScraper:
                             f"Error fetching content for child '{child['title']}' in section '{data['parent']['title']}': {e}"
                         )
 
-                # Append the parent section with all child sections to the final JSON array
                 json_array.append(base)
 
             except Exception as e:
