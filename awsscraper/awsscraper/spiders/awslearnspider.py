@@ -24,10 +24,6 @@ class AwslearnspiderSpider(scrapy.Spider):
 
         print(request)
 
-    def get_page_content(url):
-        response = requests.get(url)
-        return response.content
-
     def parse_api(self, response):
         data = json.loads(response.body)
 
