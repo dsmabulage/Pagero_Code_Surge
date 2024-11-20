@@ -1,10 +1,11 @@
 from bs4 import BeautifulSoup
 import requests
-from constant import react_base_url
+
+def get_soup(url):
+    response = requests.get(url)
+    return BeautifulSoup(response.content, "html.parser")
 
 
 def get_data_pane(url):
-    response = requests.get(url)
-
-    soup = BeautifulSoup(response.content, "html.parser")
+    soup = get_soup(url)
     return soup.find("article").find("div", class_="max-w-7xl mx-auto")

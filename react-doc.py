@@ -1,15 +1,11 @@
-from bs4 import BeautifulSoup
-import requests
 from constant import react_sections, react_base_url
-from utils import get_data_pane
+from utils import get_data_pane, get_soup
 import json
 
-quick_start = requests.get(f"{react_base_url}/learn")
+soup = get_soup(f"{react_base_url}/learn")
 
-soup = BeautifulSoup(quick_start.content, "html.parser")
 
 # Fetch Links from the page with the relative links
-
 def get_links(section):
     # Find the section's parent element
     section_parent = soup.find("a", {"title": section}).parent
@@ -44,8 +40,8 @@ for data in links_data:
 
     base = {
         "title": data["parent"]["title"],
-        "url": data["parent"]["link"],
         "source": "react",
+        "url": data["parent"]["link"],
         "sections": [],
     }
 
