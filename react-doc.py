@@ -50,6 +50,39 @@ class ReactDocumentationScraper:
             "children": child_links,
         }
 
+    def fetch_sub_section_content(self, child):
+        """
+        Fetches content for a specific sub-section.
+        :param child: Dictionary containing sub-section information.
+        :return: Dictionary with sub-section title and content.
+        """
+
+        child_class = child.findChildren("div", recursive=False)
+
+        sub_sections = []
+
+        for child in child_class:
+            child_class = child.get("class", [])
+            sub_section = {"text": [], "code_snippets": []}
+            if "sandpack" in child_class:
+                # Its a code segment
+                sub_section["code_snippets"].append(child.text)
+            else:
+                # Its a nested code block or text
+
+                child_tags = child.findChildren(recursive=False)
+
+                for tag in child_tags:
+                    tag_class = tag.get("class", [])
+                    if "sandpack" in tag_class:
+                        sub_section["code_snippets"].append(tag.text)
+                    else:
+                        sub_section["text"].append(tag.text)
+
+            sub_sections.append(sub_section)
+
+        return sub_sections
+
     def fetch_section_content(self, links_data):
         """
         Fetches content from each section and its child links.
@@ -70,11 +103,14 @@ class ReactDocumentationScraper:
                 for child in data["children"]:
                     try:
                         child_content = get_data_pane(child["link"])
+                        section_content_list = self.fetch_sub_section_content(
+                            child_content
+                        )
                         base["sections"].append(
                             {
                                 "title": child["title"],
                                 "url": child["link"],
-                                "content": [],
+                                "sub_sections": section_content_list,
                             }
                         )
 
@@ -101,7 +137,10 @@ class ReactDocumentationScraper:
 
         json_array = self.fetch_section_content(links_data)
 
-        print(json.dumps(json_array, indent=4))
+        # print(json.dumps(json_array, indent=4))
+
+        with open("output.json", "w", encoding="utf-8") as json_file:
+            json.dump(json_array, json_file, indent=4, ensure_ascii=False)
 
 
 # Run the scraper
