@@ -1,5 +1,5 @@
 from constant import react_sections, react_base_url
-from utils import get_data_pane, get_soup
+from utils import get_data_pane, get_soup, json_file_save_path
 import json
 
 
@@ -119,6 +119,21 @@ class ReactDocumentationScraper:
                             f"Error fetching content for child '{child['title']}' in section '{data['parent']['title']}': {e}"
                         )
 
+                # Adding Parent section to the JSON array
+                parent_content = get_data_pane(data["parent"]["link"])
+                parent_section_content_list = self.fetch_sub_section_content(
+                    parent_content
+                )
+                # Add as first element
+                base["sections"].insert(
+                    0,
+                    {
+                        "title": data["parent"]["title"],
+                        "url": data["parent"]["link"],
+                        "sub_sections": parent_section_content_list,
+                    },
+                )
+
                 json_array.append(base)
 
             except Exception as e:
@@ -133,14 +148,19 @@ class ReactDocumentationScraper:
         Main method to perform the scraping, processing, and outputting the final JSON.
         :return: None
         """
-        links_data = self.fetch_links()
 
-        json_array = self.fetch_section_content(links_data)
+        try:
+            links_data = self.fetch_links()
 
-        # print(json.dumps(json_array, indent=4))
+            json_array = self.fetch_section_content(links_data)
 
-        with open("../react.json", "w", encoding="utf-8") as json_file:
-            json.dump(json_array, json_file, indent=2, ensure_ascii=False)
+            with open(json_file_save_path(), "w", encoding="utf-8") as json_file:
+                json.dump(json_array, json_file, indent=2, ensure_ascii=False)
+
+        except OSError as e:
+            print(f"File I/O error: {e}")
+        except Exception as e:
+            print(f"Unexpected error occurred while saving the file: {e}")
 
 
 # Run the scraper
