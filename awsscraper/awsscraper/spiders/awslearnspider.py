@@ -19,6 +19,7 @@ class AwslearnspiderSpider(scrapy.Spider):
     def parse(self, response):
         url = f"{self.base_url}/toc-contents.json"
         request = scrapy.Request(url, callback=self.parse_api, headers=self.headers)
+
         yield request
 
     def parse_api(self, response):
@@ -42,7 +43,27 @@ class AwslearnspiderSpider(scrapy.Spider):
                         sec_obj = {
                             "title": sec["title"],
                             "url": sec_url,
+                            "sub_sections": [],
                         }
+
+                        req = scrapy.Request(
+                            sec_url,
+                            callback=self.parse_sub_section,
+                            headers=self.headers,
+                            cb_kwargs={"sec_obj": sec_obj},
+                        )
+
                         obj["sections"].append(sec_obj)
+                        yield req
 
                     yield obj
+
+    def parse_sub_section(self, response, sec_obj):
+        main_div = response.css("div#main")
+
+        text_content = main_div.css("p::text").getall()
+        code_snippets = main_div.css("pre::text").getall()
+
+        sec_obj["sub_sections"].append(
+            {"text": " ", "code_snippets": ""}
+        )

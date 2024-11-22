@@ -139,8 +139,8 @@ class ReactDocumentationScraper:
 
         # print(json.dumps(json_array, indent=4))
 
-        with open("output.json", "w", encoding="utf-8") as json_file:
-            json.dump(json_array, json_file, indent=4, ensure_ascii=False)
+        with open("../react.json", "w", encoding="utf-8") as json_file:
+            json.dump(json_array, json_file, indent=2, ensure_ascii=False)
 
 
 # Run the scraper
