@@ -1,5 +1,12 @@
 from bs4 import BeautifulSoup
 import requests
+import os
+
+
+def json_file_save_path():
+    path = os.getcwd() 
+    return os.path.join(os.path.abspath(os.path.join(path, os.pardir)), "react.json")
+
 
 def get_soup(url):
     response = requests.get(url)
