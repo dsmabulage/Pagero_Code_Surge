@@ -31,20 +31,27 @@ class AwsabstractspiderSpider(scrapy.Spider):
             for item in contents:
                 title = item.get("title")
                 if title and title in self.aws_sections:
-                    parent_url = f"{self.base_url}/{item['href']}"
+                    url = f"{self.base_url}/{item['href']}"
                     obj = {
                         "title": title,
-                        "url": parent_url,
+                        "url": url,
                         "source": "aws_lambda",
                         "sections": [],
                     }
 
-                    yield obj
+                    request = scrapy.Request(
+                        url, callback=self.parse_section, meta={"section": obj}
+                    )
+                    yield request
 
-    def parse_sub_section(self, response, sec_obj):
+    def parse_section(self, response):
         main_div = response.css("div#main")
+
+        section = response.meta["section"]
 
         text_content = main_div.css("p::text").getall()
         code_snippets = main_div.css("pre::text").getall()
 
-        sec_obj["sub_sections"].append({"text": " ", "code_snippets": ""})
+        section["sections"].append({"text": "", "code_snippets": ""})
+
+        yield section
