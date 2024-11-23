@@ -15,4 +15,6 @@ def get_soup(url):
 
 def get_data_pane(url):
     soup = get_soup(url)
-    return soup.find("article").find("div", class_="max-w-7xl mx-auto")
+    main_content = soup.find("article").find("div", class_="max-w-7xl mx-auto")
+    nav_urls = [item.text for item in soup.find("ul", class_="space-y-2 pb-16")]
+    return main_content, nav_urls

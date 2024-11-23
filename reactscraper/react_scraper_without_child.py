@@ -39,7 +39,7 @@ class ReactDocumentationScraper:
             "link": f"{self.base_url}{section_parent_link}",
         }
 
-    def fetch_sub_section_content(self, child):
+    def fetch_sub_section_content(self, child, nav_urls):
         """
         Fetches content for a specific sub-section.
         :param child: Dictionary containing sub-section information.
@@ -90,8 +90,11 @@ class ReactDocumentationScraper:
                 }
 
                 try:
-                    child_content = get_data_pane(data["link"])
-                    section_content_list = self.fetch_sub_section_content(child_content)
+                    child_content, nav_urls = get_data_pane(data["link"])
+
+                    section_content_list = self.fetch_sub_section_content(
+                        child_content, nav_urls
+                    )
                     base["sections"].append(
                         section_content_list,
                     )
