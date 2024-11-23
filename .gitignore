@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 env
+*.json
+# pycache file in all dirs
+**/__pycache__/
 
 # C extensions
 *.so
