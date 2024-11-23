@@ -31,12 +31,28 @@ class AwslearnspiderSpider(scrapy.Spider):
             for item in contents:
                 title = item.get("title")
                 if title and title in self.aws_sections:
+                    parent_url = f"{self.base_url}/{item['href']}"
                     obj = {
                         "title": title,
-                        "url": f"{self.base_url}/{item['href']}",
+                        "url": parent_url,
                         "source": "aws_lambda",
                         "sections": [],
                     }
+
+                    parent_sec_obj = {
+                        "title": title,
+                        "url": parent_url,
+                        "sub_sections": [],
+                    }
+                    obj["sections"].append(parent_sec_obj)
+
+                    parent_req = scrapy.Request(
+                        parent_url,
+                        callback=self.parse_sub_section,
+                        headers=self.headers,
+                        cb_kwargs={"sec_obj": parent_sec_obj},
+                    )
+                    yield parent_req
 
                     for sec in item.get("contents", []):
                         sec_url = f"{self.base_url}/{sec['href']}"
@@ -59,7 +75,7 @@ class AwslearnspiderSpider(scrapy.Spider):
                     yield obj
 
     def parse_sub_section(self, response, sec_obj):
-        main_div = response.css("div#main")
+        main_div = response.css("div#main-col-body")
 
         text_content = main_div.css("p::text").getall()
         code_snippets = main_div.css("pre::text").getall()
