@@ -45,11 +45,11 @@ class AwsabstractspiderSpider(scrapy.Spider):
                     yield request
 
     def parse_section(self, response):
-        main_div = response.css("div#main")
+        main_div = response.css("div#main-col-body")
 
         section = response.meta["section"]
 
-        text_content = main_div.css("p::text").getall()
+        text_content = main_div.css("*::text").getall()
         code_snippets = main_div.css("pre::text").getall()
 
         section["sections"].append({"text": "", "code_snippets": ""})
