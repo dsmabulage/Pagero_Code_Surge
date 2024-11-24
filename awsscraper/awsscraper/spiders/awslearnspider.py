@@ -19,12 +19,11 @@ class AwslearnspiderSpider(scrapy.Spider):
     def parse(self, response):
         url = f"{self.base_url}/toc-contents.json"
         request = scrapy.Request(url, callback=self.parse_api, headers=self.headers)
-
         yield request
 
     def parse_api(self, response):
         data = json.loads(response.body)
-        result = []
+        all_titles_and_hrefs = []
 
         if "contents" in data:
             contents = data["contents"]
@@ -32,31 +31,33 @@ class AwslearnspiderSpider(scrapy.Spider):
             for item in contents:
                 title = item.get("title")
                 if title and title in self.aws_sections:
-                    parent_url = f"{self.base_url}/{item['href']}"
-                    parent_obj = {
-                        "title": title,
-                        "url": parent_url,
-                        "source": "aws_lambda",
-                        "sections": [],
-                    }
-                    result.append(parent_obj)
+                    all_titles_and_hrefs.extend(self.extract_titles_and_hrefs(item))
 
-                    for sec in item.get("contents", []):
-                        sec_url = f"{self.base_url}/{sec['href']}"
-                        sec_obj = {
-                            "title": sec["title"],
-                            "url": sec_url,
-                            "source": "aws_lambda",
-                            "sections": [],
-                        }
-                        result.append(sec_obj)
+        for item in all_titles_and_hrefs:
+            request = scrapy.Request(
+                item["url"], callback=self.parse_content, meta={"item": item}
+            )
+            yield request
 
-            return result
+    def parse_content(self, response):
+        item = response.meta["item"]
+        main_content = response.css("div#main-col-body")
 
-    # def parse_sub_section(self, response, sec_obj):
-    #     main_div = response.css("div#main-col-body")
+        content = {
+            "title": item["title"],
+            "url": item["url"],
+            "source": "aws_lambda",
+            "sections": [
+                main_content.css("*::text").getall(),
+            ],
+        }
 
-    #     text_content = main_div.css("p::text").getall()
-    #     code_snippets = main_div.css("pre::text").getall()
+        return content
 
-    #     sec_obj["sub_sections"].append({"text": " ", "code_snippets": ""})
+    def extract_titles_and_hrefs(self, data):
+        if "title" in data and "href" in data:
+            yield {"title": data["title"], "url": f'{self.base_url}/{data["href"]}'}
+
+        if "contents" in data and isinstance(data["contents"], list):
+            for item in data["contents"]:
+                yield from self.extract_titles_and_hrefs(item)
