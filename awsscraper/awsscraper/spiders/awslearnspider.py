@@ -24,6 +24,7 @@ class AwslearnspiderSpider(scrapy.Spider):
 
     def parse_api(self, response):
         data = json.loads(response.body)
+        result = []
 
         if "contents" in data:
             contents = data["contents"]
@@ -32,54 +33,30 @@ class AwslearnspiderSpider(scrapy.Spider):
                 title = item.get("title")
                 if title and title in self.aws_sections:
                     parent_url = f"{self.base_url}/{item['href']}"
-                    obj = {
+                    parent_obj = {
                         "title": title,
                         "url": parent_url,
                         "source": "aws_lambda",
                         "sections": [],
                     }
-
-                    parent_sec_obj = {
-                        "title": title,
-                        "url": parent_url,
-                        "sub_sections": [],
-                    }
-                    obj["sections"].append(parent_sec_obj)
-
-                    parent_req = scrapy.Request(
-                        parent_url,
-                        callback=self.parse_sub_section,
-                        headers=self.headers,
-                        cb_kwargs={"sec_obj": parent_sec_obj},
-                    )
-                    yield parent_req
+                    result.append(parent_obj)
 
                     for sec in item.get("contents", []):
                         sec_url = f"{self.base_url}/{sec['href']}"
                         sec_obj = {
                             "title": sec["title"],
                             "url": sec_url,
-                            "sub_sections": [],
+                            "source": "aws_lambda",
+                            "sections": [],
                         }
+                        result.append(sec_obj)
 
-                        req = scrapy.Request(
-                            sec_url,
-                            callback=self.parse_sub_section,
-                            headers=self.headers,
-                            cb_kwargs={"sec_obj": sec_obj},
-                        )
+            return result
 
-                        obj["sections"].append(sec_obj)
-                        yield req
+    # def parse_sub_section(self, response, sec_obj):
+    #     main_div = response.css("div#main-col-body")
 
-                    yield obj
+    #     text_content = main_div.css("p::text").getall()
+    #     code_snippets = main_div.css("pre::text").getall()
 
-    def parse_sub_section(self, response, sec_obj):
-        main_div = response.css("div#main-col-body")
-
-        text_content = main_div.css("p::text").getall()
-        code_snippets = main_div.css("pre::text").getall()
-
-        sec_obj["sub_sections"].append(
-            {"text": " ", "code_snippets": ""}
-        )
+    #     sec_obj["sub_sections"].append({"text": " ", "code_snippets": ""})
