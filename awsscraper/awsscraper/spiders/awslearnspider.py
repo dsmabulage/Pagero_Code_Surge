@@ -47,10 +47,20 @@ class AwslearnspiderSpider(scrapy.Spider):
             "title": item["title"],
             "url": item["url"],
             "source": "aws_lambda",
-            "sections": [
-                main_content.css("*::text").getall(),
-            ],
+            "sections": [],
         }
+
+        children = main_content.xpath("./*")
+        for child in children:
+            section_details = {"text": [], "code_snippets": []}
+            if child.xpath(".//code"):
+                code_snippets = child.xpath(".//code/text()").getall()
+                section_details["code_snippets"].extend(code_snippets)
+            else:
+                text_content = child.xpath(".//text()").getall()
+                section_details["text"].extend(text_content)
+
+            content["sections"].append(section_details)
 
         return content
 
